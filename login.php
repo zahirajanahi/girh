@@ -30,7 +30,7 @@ include __DIR__ . '/includes/header.php';
 <div class="login-container">
     <div class="login-card">
         <div class="login-header">
-            <div class="login-logo">G</div>
+            <div class="login-logo"><i class="fa-solid fa-users-gear"></i></div>
             <h2><?= e(APP_NAME) ?></h2>
             <p><?= e(APP_SUBTITLE) ?></p>
         </div>
@@ -60,7 +60,7 @@ include __DIR__ . '/includes/header.php';
                 <?php endif; ?>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+            <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-right-to-bracket"></i> Se connecter</button>
         </form>
 
         <div class="login-demo">

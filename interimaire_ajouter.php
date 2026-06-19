@@ -1,15 +1,20 @@
 <?php
 require_once __DIR__ . '/php/auth.php';
 require_once __DIR__ . '/php/interimaires.php';
+require_once __DIR__ . '/php/entreprises.php';
 
 requireLogin();
 
 $errors = [];
 $data = [
-    'nom' => '', 'prenom' => '', 'cin' => '', 'telephone' => '', 'email' => '',
-    'adresse' => '', 'date_naissance' => '', 'competences' => '',
-    'disponibilite' => 'disponible', 'date_inscription' => date('Y-m-d'),
+    'nom' => '', 'prenom' => '', 'cin' => '', 'fonction' => '',
+    'telephone' => '', 'email' => '', 'adresse' => '', 'date_naissance' => '',
+    'entreprise_id' => '', 'type_contrat' => 'CDD', 'date_debut' => date('Y-m-d'),
+    'date_fin' => '', 'salaire' => '', 'type_salaire' => 'mensuel',
+    'mode_paiement' => 'virement', 'statut' => 'en_mission', 'competences' => '',
 ];
+
+$entreprises = getAllEntreprisesForSelect();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = array_merge($data, $_POST);

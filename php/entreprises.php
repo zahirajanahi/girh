@@ -101,10 +101,10 @@ function deleteEntreprise(int $id): array
 {
     $pdo = getPDO();
 
-    $stmt = $pdo->prepare('SELECT COUNT(*) FROM missions WHERE entreprise_id = :id');
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM interimaires WHERE entreprise_id = :id');
     $stmt->execute(['id' => $id]);
     if ((int) $stmt->fetchColumn() > 0) {
-        return ['success' => false, 'message' => 'Impossible de supprimer : cette entreprise est liée à une ou plusieurs missions.'];
+        return ['success' => false, 'message' => 'Impossible de supprimer : des intérimaires sont rattachés à cette entreprise.'];
     }
 
     $stmt = $pdo->prepare('DELETE FROM entreprises WHERE id = :id');

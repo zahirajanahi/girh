@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/php/auth.php';
 require_once __DIR__ . '/php/interimaires.php';
-require_once __DIR__ . '/php/missions.php';
+require_once __DIR__ . '/php/feuilles_temps.php';
 
 requireLogin();
 
@@ -12,15 +12,17 @@ if (!$interimaire) {
     redirect('interimaires.php?message=' . urlencode('Intérimaire introuvable.') . '&type=error');
 }
 
-$missions = getMissionsByInterimaire($id);
+$feuilles = getFeuillesByInterimaire($id);
+$totalHeures = getTotalHeuresInterimaire($id);
 
 $pageTitle = 'Fiche intérimaire';
 include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="page-actions">
-    <a href="interimaires.php" class="btn btn-outline">← Retour à la liste</a>
-    <a href="interimaire_modifier.php?id=<?= $id ?>" class="btn btn-primary">Modifier</a>
+    <a href="interimaires.php" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+    <a href="interimaire_modifier.php?id=<?= $id ?>" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Modifier</a>
+    <a href="simulation_paie.php?id=<?= $id ?>" class="btn btn-outline"><i class="fa-solid fa-calculator"></i> Simulation paie</a>
 </div>
 
 <div class="detail-grid">
@@ -28,57 +30,51 @@ include __DIR__ . '/includes/header.php';
         <div class="card-header"><h3>Informations personnelles</h3></div>
         <div class="card-body">
             <dl class="detail-list">
-                <dt>Nom complet</dt>
-                <dd><?= e($interimaire['prenom'] . ' ' . $interimaire['nom']) ?></dd>
-                <dt>CIN</dt>
-                <dd><?= e($interimaire['cin']) ?></dd>
-                <dt>Date de naissance</dt>
-                <dd><?= formatDate($interimaire['date_naissance']) ?></dd>
-                <dt>Téléphone</dt>
-                <dd><?= e($interimaire['telephone'] ?? '-') ?></dd>
-                <dt>Email</dt>
-                <dd><?= e($interimaire['email'] ?? '-') ?></dd>
-                <dt>Adresse</dt>
-                <dd><?= e($interimaire['adresse'] ?? '-') ?></dd>
-                <dt>Compétences</dt>
-                <dd><?= e($interimaire['competences'] ?? '-') ?></dd>
-                <dt>Disponibilité</dt>
-                <dd><span class="badge badge-<?= e($interimaire['disponibilite']) ?>"><?= e(getDisponibiliteLabel($interimaire['disponibilite'])) ?></span></dd>
-                <dt>Date d'inscription</dt>
-                <dd><?= formatDate($interimaire['date_inscription']) ?></dd>
+                <dt>Nom complet</dt><dd><?= e($interimaire['prenom'] . ' ' . $interimaire['nom']) ?></dd>
+                <dt>CIN</dt><dd><?= e($interimaire['cin']) ?></dd>
+                <dt>Fonction</dt><dd><?= e($interimaire['fonction']) ?></dd>
+                <dt>Téléphone</dt><dd><?= e($interimaire['telephone'] ?? '—') ?></dd>
+                <dt>Email</dt><dd><?= e($interimaire['email'] ?? '—') ?></dd>
+                <dt>Adresse</dt><dd><?= e($interimaire['adresse'] ?? '—') ?></dd>
             </dl>
         </div>
     </div>
-
     <div class="card">
-        <div class="card-header"><h3>Historique des missions</h3></div>
-        <div class="card-body table-responsive">
-            <?php if (empty($missions)): ?>
-                <p class="text-muted">Aucune mission enregistrée.</p>
-            <?php else: ?>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Poste</th>
-                            <th>Entreprise</th>
-                            <th>Période</th>
-                            <th>Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($missions as $m): ?>
-                            <tr>
-                                <td><a href="mission_detail.php?id=<?= (int) $m['id'] ?>"><?= e($m['poste']) ?></a></td>
-                                <td><?= e($m['nom_entreprise']) ?></td>
-                                <td><?= formatDate($m['date_debut']) ?> — <?= formatDate($m['date_fin']) ?></td>
-                                <td><span class="badge badge-statut-<?= e($m['statut']) ?>"><?= e(getStatutLabel($m['statut'])) ?></span></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+        <div class="card-header"><h3>Contrat & rémunération</h3></div>
+        <div class="card-body">
+            <dl class="detail-list">
+                <dt>Société</dt><dd><?= e($interimaire['nom_entreprise'] ?? '—') ?></dd>
+                <dt>Type contrat</dt><dd><span class="badge badge-<?= e($interimaire['type_contrat']) ?>"><?= e(getTypeContratLabel($interimaire['type_contrat'])) ?></span></dd>
+                <dt>Période</dt><dd><?= formatDate($interimaire['date_debut']) ?> — <?= formatDate($interimaire['date_fin']) ?></dd>
+                <dt>Salaire</dt><dd><?= formatMontant((float) $interimaire['salaire']) ?> (<?= e(getTypeSalaireLabel($interimaire['type_salaire'])) ?>)</dd>
+                <dt>Paiement</dt><dd><?= e(getModePaiementLabel($interimaire['mode_paiement'])) ?></dd>
+                <dt>Statut</dt><dd><span class="badge badge-<?= e($interimaire['statut']) ?>"><?= e(getStatutLabel($interimaire['statut'])) ?></span></dd>
+            </dl>
         </div>
     </div>
 </div>
+
+<?php if ($interimaire['type_salaire'] === 'horaire'): ?>
+<div class="card">
+    <div class="card-header"><h3>Heures travaillées (<?= number_format($totalHeures, 2, ',', ' ') ?> h total)</h3></div>
+    <div class="card-body table-responsive">
+        <?php if (empty($feuilles)): ?>
+            <p class="text-muted">Aucune heure enregistrée.</p>
+        <?php else: ?>
+            <table class="table">
+                <thead><tr><th>Date</th><th>Heures</th></tr></thead>
+                <tbody>
+                    <?php foreach ($feuilles as $f): ?>
+                        <tr>
+                            <td><?= formatDate($f['date']) ?></td>
+                            <td><?= number_format((float) $f['heures_travaillees'], 2, ',', ' ') ?> h</td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

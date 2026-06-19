@@ -1,28 +1,27 @@
 <?php
 require_once __DIR__ . '/php/auth.php';
 require_once __DIR__ . '/php/feuilles_temps.php';
-require_once __DIR__ . '/php/missions.php';
+require_once __DIR__ . '/php/interimaires.php';
 
 requireLogin();
 
 $message = $_GET['message'] ?? '';
 $messageType = $_GET['type'] ?? 'success';
-$selectedMissionId = (int) ($_GET['mission_id'] ?? 0);
+$selectedId = (int) ($_GET['interimaire_id'] ?? 0);
 
 $errors = [];
 $data = [
-    'mission_id' => $selectedMissionId ?: '',
-    'date' => date('Y-m-d'),
+    'interimaire_id'     => $selectedId ?: '',
+    'date'               => date('Y-m-d'),
     'heures_travaillees' => '',
 ];
 
-$missionsActives = getMissionsActivesForSelect();
-$feuilles = getAllFeuillesTemps();
+$salaries = getInterimairesForFeuillesTemps();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_id'])) {
         deleteFeuilleTemps((int) $_POST['delete_id']);
-        redirect('feuilles_temps.php?message=' . urlencode('Feuille de temps supprimée.') . '&type=success');
+        redirect('feuilles_temps.php?message=' . urlencode('Saisie supprimée.') . '&type=success');
     }
 
     $data = array_merge($data, $_POST);
@@ -30,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         createFeuilleTemps($data);
-        redirect('feuilles_temps.php?message=' . urlencode('Heures enregistrées avec succès.') . '&type=success&mission_id=' . (int) $data['mission_id']);
+        redirect('feuilles_temps.php?message=' . urlencode('Heures enregistrées.') . '&type=success');
     }
 }
 
@@ -39,84 +38,70 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <?php if ($message): ?>
-    <div class="alert alert-<?= $messageType === 'error' ? 'error' : 'success' ?>"><?= e($message) ?></div>
+    <div class="alert alert-<?= $messageType === 'error' ? 'error' : 'success' ?>">
+        <i class="fa-solid fa-circle-check"></i> <?= e($message) ?>
+    </div>
 <?php endif; ?>
 
-<div class="detail-grid">
-    <div class="card">
-        <div class="card-header"><h3>Saisir des heures</h3></div>
-        <div class="card-body">
-            <?php if (empty($missionsActives)): ?>
-                <div class="alert alert-warning">Aucune mission active disponible pour la saisie d'heures.</div>
-            <?php else: ?>
-                <form method="POST" class="form" id="feuilleForm" novalidate>
-                    <div class="form-group">
-                        <label for="mission_id">Mission <span class="required">*</span></label>
-                        <select id="mission_id" name="mission_id" class="form-control <?= isset($errors['mission_id']) ? 'is-invalid' : '' ?>" required>
-                            <option value="">— Sélectionner —</option>
-                            <?php foreach ($missionsActives as $m): ?>
-                                <option value="<?= (int) $m['id'] ?>" <?= (string) $data['mission_id'] === (string) $m['id'] ? 'selected' : '' ?>>
-                                    <?= e($m['nom_entreprise']) ?> — <?= e($m['poste']) ?> (<?= e($m['prenom'] . ' ' . $m['nom']) ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if (isset($errors['mission_id'])): ?><span class="error-message"><?= e($errors['mission_id']) ?></span><?php endif; ?>
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="date">Date <span class="required">*</span></label>
-                            <input type="date" id="date" name="date" class="form-control <?= isset($errors['date']) ? 'is-invalid' : '' ?>"
-                                   value="<?= e($data['date']) ?>" required>
-                            <?php if (isset($errors['date'])): ?><span class="error-message"><?= e($errors['date']) ?></span><?php endif; ?>
-                        </div>
-                        <div class="form-group">
-                            <label for="heures_travaillees">Heures travaillées <span class="required">*</span></label>
-                            <input type="number" id="heures_travaillees" name="heures_travaillees" step="0.5" min="0.5" max="24"
-                                   class="form-control <?= isset($errors['heures_travaillees']) ? 'is-invalid' : '' ?>"
-                                   value="<?= e($data['heures_travaillees']) ?>" required>
-                            <?php if (isset($errors['heures_travaillees'])): ?><span class="error-message"><?= e($errors['heures_travaillees']) ?></span><?php endif; ?>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                </form>
-            <?php endif; ?>
-        </div>
+<div class="card">
+    <div class="card-header"><h3><i class="fa-solid fa-plus"></i> Saisir des heures</h3></div>
+    <div class="card-body">
+        <form method="POST" class="form" id="feuilleForm" style="max-width:600px" novalidate>
+            <div class="form-group">
+                <label for="interimaire_id">Intérimaire <span class="required">*</span></label>
+                <select id="interimaire_id" name="interimaire_id" class="form-control" required>
+                    <option value="">— Sélectionner —</option>
+                    <?php foreach ($salaries as $s): ?>
+                        <option value="<?= (int) $s['id'] ?>" <?= (string) $data['interimaire_id'] === (string) $s['id'] ? 'selected' : '' ?>>
+                            <?= e($s['prenom'] . ' ' . $s['nom']) ?> — <?= e($s['fonction']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="date">Date <span class="required">*</span></label>
+                    <input type="date" id="date" name="date" class="form-control" value="<?= e($data['date']) ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="heures_travaillees">Heures <span class="required">*</span></label>
+                    <input type="number" id="heures_travaillees" name="heures_travaillees" step="0.5" min="0.5" max="24"
+                           class="form-control" value="<?= e($data['heures_travaillees']) ?>" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Enregistrer</button>
+        </form>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header"><h3>Historique des saisies</h3></div>
+    <div class="card-header">
+        <h3>Salariés — cliquez pour simuler la paie</h3>
+    </div>
     <div class="card-body table-responsive">
-        <?php if (empty($feuilles)): ?>
-            <p class="text-muted text-center">Aucune feuille de temps enregistrée.</p>
+        <?php if (empty($salaries)): ?>
+            <p class="text-muted text-center">Aucun intérimaire enregistré.</p>
         <?php else: ?>
-            <table class="table">
+            <table class="table" id="salariesTable">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Mission</th>
-                        <th>Entreprise</th>
-                        <th>Intérimaire</th>
-                        <th>Heures</th>
-                        <th>Montant</th>
-                        <th>Actions</th>
+                        <th>Salarié</th>
+                        <th>CIN</th>
+                        <th>Fonction</th>
+                        <th>Type de salaire</th>
+                        <th>Mode de paiement</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($feuilles as $f): ?>
-                        <tr>
-                            <td><?= formatDate($f['date']) ?></td>
-                            <td><a href="mission_detail.php?id=<?= (int) $f['mission_id'] ?>"><?= e($f['poste']) ?></a></td>
-                            <td><?= e($f['nom_entreprise']) ?></td>
-                            <td><?= e($f['interimaire_prenom'] . ' ' . $f['interimaire_nom']) ?></td>
-                            <td><?= number_format((float) $f['heures_travaillees'], 2, ',', ' ') ?> h</td>
-                            <td><?= formatMontant((float) $f['heures_travaillees'] * (float) $f['salaire_horaire']) ?></td>
-                            <td>
-                                <form method="POST" class="inline-form" onsubmit="return confirm('Supprimer cette saisie ?');">
-                                    <input type="hidden" name="delete_id" value="<?= (int) $f['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Supprimer">🗑</button>
-                                </form>
-                            </td>
+                    <?php foreach ($salaries as $s): ?>
+                        <tr class="clickable-row" onclick="window.location='simulation_paie.php?id=<?= (int) $s['id'] ?>'">
+                            <td><strong><?= e($s['prenom'] . ' ' . $s['nom']) ?></strong></td>
+                            <td><?= e($s['cin']) ?></td>
+                            <td><?= e($s['fonction']) ?></td>
+                            <td><?= e(getTypeSalaireLabel($s['type_salaire'])) ?></td>
+                            <td><?= e(getModePaiementLabel($s['mode_paiement'])) ?></td>
+                            <td><i class="fa-solid fa-calculator" style="color:#14B8A6"></i></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

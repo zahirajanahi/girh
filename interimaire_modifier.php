@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/php/auth.php';
 require_once __DIR__ . '/php/interimaires.php';
+require_once __DIR__ . '/php/entreprises.php';
 
 requireLogin();
 
@@ -13,6 +14,7 @@ if (!$interimaire) {
 
 $errors = [];
 $data = $interimaire;
+$entreprises = getAllEntreprisesForSelect();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = array_merge($interimaire, $_POST);

@@ -1,5 +1,5 @@
 /**
- * GIRH - Graphiques du tableau de bord (Chart.js)
+ * GIRH - Graphiques tableau de bord
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -10,16 +10,18 @@ document.addEventListener('DOMContentLoaded', function () {
 function parseChartData(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return null;
-
     try {
-        const labels = JSON.parse(canvas.dataset.labels || '[]');
-        const values = JSON.parse(canvas.dataset.values || '[]');
-        return { canvas, labels, values };
+        return {
+            canvas,
+            labels: JSON.parse(canvas.dataset.labels || '[]'),
+            values: JSON.parse(canvas.dataset.values || '[]'),
+        };
     } catch (e) {
-        console.error('Erreur parsing données graphique:', e);
         return null;
     }
 }
+
+const CHART_COLORS = ['#14B8A6', '#0EA5E9', '#6366F1', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#F97316'];
 
 function initSecteursChart() {
     const data = parseChartData('chartSecteurs');
@@ -31,24 +33,18 @@ function initSecteursChart() {
             labels: data.labels.length ? data.labels : ['Aucune donnée'],
             datasets: [{
                 data: data.values.length ? data.values : [1],
-                backgroundColor: [
-                    '#1e5a9e', '#2c7be5', '#28a745', '#6f42c1',
-                    '#f0ad4e', '#dc3545', '#17a2b8', '#fd7e14'
-                ],
-                borderWidth: 2,
-                borderColor: '#ffffff'
-            }]
+                backgroundColor: CHART_COLORS,
+                borderWidth: 3,
+                borderColor: '#FFFFFF',
+            }],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { padding: 16, usePointStyle: true }
-                }
-            }
-        }
+                legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, font: { family: 'Inter', size: 12 } } },
+            },
+        },
     });
 }
 
@@ -56,12 +52,12 @@ function initMoisChart() {
     const data = parseChartData('chartMois');
     if (!data || typeof Chart === 'undefined') return;
 
-    const formattedLabels = data.labels.map(function (mois) {
+    const labels = data.labels.map(function (mois) {
         if (!mois) return mois;
-        const parts = mois.split('-');
-        if (parts.length === 2) {
+        const p = mois.split('-');
+        if (p.length === 2) {
             const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-            return months[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+            return months[parseInt(p[1], 10) - 1] + ' ' + p[0];
         }
         return mois;
     });
@@ -69,28 +65,24 @@ function initMoisChart() {
     new Chart(data.canvas, {
         type: 'bar',
         data: {
-            labels: formattedLabels.length ? formattedLabels : ['Aucune donnée'],
+            labels: labels.length ? labels : ['Aucune donnée'],
             datasets: [{
-                label: 'Missions créées',
+                label: 'Arrivées',
                 data: data.values.length ? data.values : [0],
-                backgroundColor: 'rgba(30, 90, 158, 0.8)',
-                borderColor: '#1e5a9e',
-                borderWidth: 1,
-                borderRadius: 6
-            }]
+                backgroundColor: 'rgba(20, 184, 166, 0.85)',
+                borderColor: '#14B8A6',
+                borderWidth: 0,
+                borderRadius: 8,
+            }],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            }
-        }
+                y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Inter' } }, grid: { color: '#F1F5F9' } },
+                x: { ticks: { font: { family: 'Inter' } }, grid: { display: false } },
+            },
+        },
     });
 }
